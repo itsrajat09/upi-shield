@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UPI Shield</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<style>
+:root{--ink:#1B2340;--muted:#5B6485;--bg:#F2F4FA;--card:#fff;--line:#D9DEEC;--brand:#3B4BDB;
+--low:#1F8A5B;--med:#B97A00;--high:#C8321F;--lowbg:#E5F5EC;--medbg:#FFF3D6;--highbg:#FDE8E4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Hanken Grotesk",system-ui,sans-serif}
+h1,h2,.verdict{font-family:"Bricolage Grotesque","Hanken Grotesk",sans-serif;margin:0}
+button,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+header{max-width:1040px;margin:0 auto;padding:28px 20px 8px;display:flex;flex-wrap:wrap;gap:16px;align-items:end;justify-content:space-between}
+h1{font-size:2rem;font-weight:800;letter-spacing:-.02em}
+header p{margin:2px 0 0;color:var(--muted)}
+nav{display:flex;gap:4px;background:#E3E7F4;padding:4px;border-radius:12px}
+nav button{border:0;background:none;padding:8px 16px;border-radius:9px;cursor:pointer;font-weight:600;color:var(--muted)}
+nav button[aria-selected=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px #1b234022}
+main{max-width:1040px;margin:0 auto;padding:12px 20px 60px}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:20px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+label{font-weight:600;display:block;margin-bottom:6px}
+textarea{width:100%;min-height:150px;resize:vertical;padding:12px;border:1px solid var(--line);border-radius:10px;background:#FBFCFF}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border:0;border-radius:10px;padding:11px 20px;font-weight:600;cursor:pointer;background:var(--brand);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.55;cursor:wait}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:.88rem;cursor:pointer}
+.chip:hover{border-color:var(--brand)}
+.deep{display:flex;gap:8px;align-items:center;font-weight:500;margin:14px 0 0}
+.hint{color:var(--muted);font-size:.9rem;margin:10px 0 0}
+.modes{display:flex;gap:16px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.modes button{border:0;background:none;padding:6px 0 10px;cursor:pointer;font-weight:600;color:var(--muted);border-bottom:3px solid transparent}
+.modes button[aria-selected=true]{color:var(--ink);border-color:var(--brand)}
+.empty{color:var(--muted);text-align:center;padding:36px 12px}
+.result{border-radius:16px;border:1px solid var(--line);background:var(--card);overflow:hidden}
+.result .top{padding:20px}
+.low .top{background:var(--lowbg)}.medium .top{background:var(--medbg)}.high .top{background:var(--highbg)}
+.verdict{font-size:2.4rem;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.low .verdict{color:var(--low)}.medium .verdict{color:var(--med)}.high .verdict{color:var(--high)}
+.cat{margin-top:4px;font-weight:600}
+.meter{position:relative;height:10px;border-radius:6px;margin-top:16px;background:linear-gradient(90deg,var(--low) 0 30%,var(--med) 30% 60%,var(--high) 60% 100%)}
+.meter i{position:absolute;top:-5px;width:6px;height:20px;border-radius:3px;background:var(--ink);border:2px solid #fff;transform:translateX(-50%)}
+.score{font-size:.9rem;color:var(--muted);margin-top:8px}
+.body{padding:20px;display:grid;gap:18px}
+h2{font-size:1.1rem}
+ul.ev{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:8px}
+ul.ev li{display:flex;gap:10px;align-items:flex-start}
+.w{flex:none;min-width:42px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:600;font-size:.85rem}
+.w.pos{background:var(--highbg);color:var(--high)}.w.neg{background:var(--lowbg);color:var(--low)}
+.next{background:#EEF0FF;border-left:4px solid var(--brand);padding:12px 14px;border-radius:8px}
+code{background:#EEF0F8;padding:1px 6px;border-radius:5px;word-break:break-all}
+.found{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.dash{display:grid;gap:20px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.stat b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:2rem;line-height:1.1}
+.stat span{color:var(--muted);font-size:.9rem}
+#graph{height:380px;border:1px solid var(--line);border-radius:12px;background:#FBFCFF}
+.err{background:var(--highbg);border:1px solid #F3B9B0;border-radius:10px;padding:12px 14px;margin-bottom:16px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>UPI Shield</h1>
+    <p>Check a message, link or QR before you pay.</p>
+  </div>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" aria-selected="true" data-view="check">Check</button>
+    <button role="tab" aria-selected="false" data-view="dash">Dashboard</button>
+  </nav>
+</header>
+
+<main>
+  <div id="offline" class="err" hidden>
+    Can't reach the backend at <code id="apiurl"></code>. Open a terminal in <code>upi-shield/backend</code>, activate the venv and run <code>uvicorn main:app --reload</code>.
+  </div>
+
+  <section id="check" class="grid">
+    <div class="panel">
+      <div class="modes" role="tablist" aria-label="Input type">
+        <button role="tab" aria-selected="true" data-mode="text">Message or link</button>
+        <button role="tab" aria-selected="false" data-mode="qr">QR / UPI string</button>
+      </div>
+      <label for="input" id="inlabel">Paste the message you received</label>
+      <textarea id="input" placeholder="Aapka KYC expire ho gaya hai. Abhi update karo: bit.ly/..."></textarea>
+      <div class="row">
+        <button class="btn" id="go">Check now</button>
+        <button class="btn ghost" id="clear">Clear</button>
+      </div>
+      <label class="deep"><input type="checkbox" id="deep"> Deep check with TinyFish (opens the link remotely and searches for reports, slower)</label>
+      <p class="hint" id="qrhint" hidden>Scan the QR with any scanner app, copy the text it shows (it starts with <code>upi://pay</code>) and paste it here.</p>
+      <p class="hint">Try an example:</p>
+      <div class="row" id="demos" style="margin-top:6px"></div>
+    </div>
+
+    <div id="out" aria-live="polite">
+      <div class="panel empty">Your result will appear here, with the reasons behind it.</div>
+    </div>
+  </section>
+
+  <section id="dash" class="dash" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="panel">
+      <h2>Scam campaigns</h2>
+      <p class="hint" style="margin:4px 0 12px">Reports that share a link or UPI ID are joined. Round nodes are reports, diamonds are the shared indicators.</p>
+      <div id="graph"></div>
+      <p class="empty" id="graphEmpty" hidden>No linked reports yet. Report two messages that share a link or UPI ID.</p>
+      <div class="row">
+        <button class="btn ghost" id="seed">Add 2 sample linked reports</button>
+        <button class="btn ghost" id="refresh">Refresh</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Mistakes on the test set</h2>
+      <div id="errs" class="hint">Loading…</div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const API = (location.hostname.endsWith("onrender.com") || location.port === "8000") ? "" : "http://127.0.0.1:8000";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let mode = "text", lastInput = "", cy = null;
+$("#apiurl").textContent = API || location.origin;
+
+async function api(path, body) {
+  const opt = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {};
+  try {
+    const r = await fetch(API + path, opt);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    $("#offline").hidden = true;
+    return await r.json();
+  } catch (e) { $("#offline").hidden = false; throw e; }
+}
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),2200); }
+
+// ---- navigation
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  $("#check").hidden = b.dataset.view !== "check";
+  $("#dash").hidden = b.dataset.view !== "dash";
+  if (b.dataset.view === "dash") loadDash();
+});
+document.querySelectorAll(".modes button").forEach(b => b.onclick = () => {
+  mode = b.dataset.mode;
+  document.querySelectorAll(".modes button").forEach(x => x.setAttribute("aria-selected", x === b));
+  const qr = mode === "qr";
+  $("#inlabel").textContent = qr ? "Paste the text from the QR code" : "Paste the message you received";
+  $("#input").placeholder = qr ? "upi://pay?pa=name@bank&pn=Shop&am=500" : "Aapka KYC expire ho gaya hai. Abhi update karo: bit.ly/...";
+  $("#qrhint").hidden = !qr;
+});
+
+// ---- demos
+api("/demo").then(list => {
+  $("#demos").innerHTML = list.map((d,i) => `<button class="chip" data-i="${i}">${esc(d.name)}</button>`).join("");
+  $("#demos").onclick = e => { const i = e.target.dataset.i; if (i === undefined) return;
+    $("#input").value = list[i].text; run(); };
+}).catch(()=>{});
+
+// ---- analyze
+async function run() {
+  const text = $("#input").value.trim();
+  if (!text) { $("#out").innerHTML = '<div class="panel empty">Paste a message, link or UPI string first.</div>'; return; }
+  lastInput = text;
+  const btn = $("#go"); btn.disabled = true; btn.textContent = "Checking…";
+  try {
+    const deep = $("#deep").checked;
+    if (deep) btn.textContent = "Checking with TinyFish…";
+    const r = mode === "qr" ? await api("/analyze-qr", {payload:text, deep}) : await api("/analyze", {text, deep});
+    render(r);
+  } catch (e) { $("#out").innerHTML = '<div class="panel empty">Could not check this. Is the backend running?</div>'; }
+  btn.disabled = false; btn.textContent = "Check now";
+}
+$("#go").onclick = run;
+$("#clear").onclick = () => { $("#input").value = ""; $("#out").innerHTML = '<div class="panel empty">Your result will appear here, with the reasons behind it.</div>'; };
+
+function render(r) {
+  const lv = r.level.toLowerCase();
+  const ev = r.evidence.length
+    ? r.evidence.map(e => `<li><span class="w ${e.weight>0?"pos":"neg"}">${e.weight>0?"+":""}${e.weight}</span><span>${esc(e.reason)}</span></li>`).join("")
+    : "<li>No warning signs found in this text.</li>";
+  const chips = a => a.map(x => `<code>${esc(x)}</code>`).join("");
+  $("#out").innerHTML = `
+  <div class="result ${lv}">
+    <div class="top">
+      <div class="verdict">${esc(r.level)} risk</div>
+      <div class="cat">${esc(r.category)}</div>
+      <div class="meter"><i style="left:${Math.max(2,Math.min(98,r.score))}%"></i></div>
+      <div class="score">Score ${r.score} out of 100</div>
+    </div>
+    <div class="body">
+      <div><h2>What to do now</h2><div class="next" style="margin-top:8px">${esc(r.next_step)}</div></div>
+      ${r.qr_note ? `<div><h2>About this QR</h2><p style="margin:6px 0 0">${esc(r.qr_note)}</p></div>` : ""}
+      <div><h2>Why we think so</h2><ul class="ev">${ev}</ul></div>
+      ${(r.urls.length||r.upi_ids.length) ? `<div><h2>Found in the text</h2><div class="found">${chips(r.urls)}${chips(r.upi_ids)}</div></div>` : ""}
+      ${r.intel ? intelHtml(r.intel) : ""}
+      <div class="row" style="margin:0"><button class="btn ghost" id="report">Report this scam</button></div>
+    </div>
+  </div>`;
+  $("#report").onclick = async () => {
+    try { const x = await api("/report", {text:lastInput}); toast("Reported. Report #" + x.id + " saved."); }
+    catch (e) { toast("Could not save the report."); }
+  };
+}
+
+function intelHtml(i) {
+  if (!i.enabled) return `<div><h2>TinyFish deep check</h2><p class="hint" style="margin-top:6px">Not set up yet. Add TINYFISH_API_KEY to backend/.env and restart the server.</p></div>`;
+  const rows = [];
+  i.pages.forEach(p => rows.push(p.error
+    ? `Could not open <code>${esc(p.url)}</code>: ${esc(p.error)}`
+    : `Opened <code>${esc(p.url)}</code> in a remote browser. Page title: ${esc(p.title || "none")}`));
+  i.reports.forEach(x => {
+    if (x.error) { rows.push(`Search failed for <code>${esc(x.indicator)}</code>.`); return; }
+    const src = x.sources.filter(s => /^https?:/.test(s.url)).map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a>`).join(", ");
+    rows.push(`<code>${esc(x.indicator)}</code>: ${x.count} scam-related web result${x.count === 1 ? "" : "s"}${src ? " (" + src + ")" : ""}`);
+  });
+  if (!rows.length) rows.push("Nothing to check online. Add a link or UPI ID to the text.");
+  return `<div><h2>TinyFish deep check</h2><ul class="ev">${rows.map(x => `<li><span>${x}</span></li>`).join("")}</ul></div>`;
+}
+
+// ---- dashboard
+async function loadDash() {
+  try {
+    const m = await api("/metrics");
+    if (m.error) { $("#stats").innerHTML = `<div class="err">${esc(m.error)}</div>`; }
+    else {
+      const pct = v => (v*100).toFixed(1) + "%";
+      $("#stats").innerHTML = [["Precision",pct(m.precision)],["Recall",pct(m.recall)],["F1 score",pct(m.f1)],
+        ["False alarm rate",pct(m.false_positive_rate)],["Test messages",m.total]]
+        .map(([k,v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+      $("#errs").innerHTML = m.errors.length
+        ? "<ul class='ev'>" + m.errors.map(e => `<li><span class="w pos">${esc(e.type)}</span><span>${esc(e.text)}</span></li>`).join("") + "</ul>"
+        : "No mistakes on the current test set. Add more messages to <code>data/demo_cases.csv</code> to test harder.";
+    }
+    const c = await api("/campaigns");
+    drawGraph(c.elements);
+  } catch (e) {}
+}
+function drawGraph(els) {
+  $("#graphEmpty").hidden = els.length > 0;
+  $("#graph").hidden = els.length === 0;
+  if (!els.length) return;
+  if (cy) cy.destroy();
+  cy = cytoscape({container:$("#graph"), elements:els, layout:{name:"cose", animate:false, padding:30},
+    style:[
+      {selector:"node", style:{label:"data(label)", "font-size":11, color:"#1B2340", "text-valign":"bottom", "text-margin-y":6, "text-wrap":"wrap", "text-max-width":120}},
+      {selector:"node[kind='report']", style:{"background-color":"#3B4BDB", width:26, height:26}},
+      {selector:"node[kind='indicator']", style:{shape:"diamond", "background-color":"#C8321F", width:30, height:30}},
+      {selector:"edge", style:{width:2, "line-color":"#B8C0DC"}}]});
+}
+$("#refresh").onclick = loadDash;
+$("#seed").onclick = async () => {
+  try {
+    await api("/report", {text:"Cashback Rs 5000 jeeta hai! Claim karo http://paytm-reward-claim.xyz/win aur UPI PIN dalo"});
+    await api("/report", {text:"Aapka reward expire ho raha hai, turant http://paytm-reward-claim.xyz/now par OTP share karo. Pay to reward.help@ybl"});
+    toast("2 sample reports added."); loadDash();
+  } catch (e) {}
+};
+</script>
+</body>
+</html>
