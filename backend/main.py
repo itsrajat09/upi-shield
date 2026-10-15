@@ -69,7 +69,7 @@ def analyze_qr(body: QrIn):
         res = analyze(body.payload)
         res["qr"] = qr
         res["qr_note"] = "Ye UPI QR nahi hai - sirf link/text ki tarah check kiya."
-        return res
+        return enrich(res) if body.deep else res
     res = analyze(f"{qr['pn']} {qr['tn']}", extra_upi_ids=[qr["pa"]] if qr["pa"] else [])
     res["qr"] = qr
     notes = ["QR scan karke sirf paisa BHEJA jaata hai, receive nahi hota. Koi 'paisa lene ke liye scan karo' bole to scam hai."]
