@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UPI Shield - Adapting to a new scam</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1B2340;--muted:#5B6485;--bg:#F2F4FA;--card:#fff;--line:#D9DEEC;--brand:#3B4BDB;--low:#1F8A5B;--med:#B97A00;--high:#C8321F;--lowbg:#E5F5EC;--medbg:#FFF3D6;--highbg:#FDE8E4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Hanken Grotesk",system-ui,sans-serif}
+h1,h2,.num{font-family:"Bricolage Grotesque","Hanken Grotesk",sans-serif;margin:0}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+main{max-width:860px;margin:0 auto;padding:28px 20px 56px}
+h1{font-size:2rem;font-weight:800;letter-spacing:-.02em}
+.lead{color:var(--muted);margin:6px 0 22px;max-width:62ch}
+.steps{display:grid;gap:12px;margin-bottom:20px}
+.step{display:grid;grid-template-columns:38px 1fr;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.step .n{width:34px;height:34px;border-radius:50%;background:#E3E7F4;display:grid;place-items:center;font-weight:800}
+.step b{display:block}.step span{color:var(--muted);font-size:.93rem}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 22px}
+.btn{border:0;border-radius:12px;padding:12px 20px;font-weight:600;background:var(--brand);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.6;cursor:wait}
+label{color:var(--muted);font-size:.93rem}
+input[type=number]{width:76px;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+h2{font-size:1.1rem;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500;font-size:.85rem}
+td.v{font-variant-numeric:tabular-nums}
+.bad{color:var(--high);font-weight:600}.good{color:var(--low);font-weight:600}
+.cap{color:var(--muted);font-size:.88rem;margin:10px 0 0}
+.empty{color:var(--muted);text-align:center;padding:26px}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:600}
+.err{background:var(--highbg);border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.bars{display:grid;gap:10px}
+.bars div.l{display:flex;justify-content:space-between;font-size:.9rem}
+.bar{height:12px;background:#EEF0F8;border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:6px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Adapting to a new scam</h1>
+  <p class="lead">The model was trained on 5 known scam types. A new one appears: <b>fake investment</b>. Here is what happens before and after the system adapts.</p>
+
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div><b>Miss</b><span>The old model has never seen this scam and lets it through.</span></div></div>
+    <div class="step"><div class="n">2</div><div><b>Detect</b><span>A novelty detector, trained only on normal behaviour, flags payments that look unlike normal.</span></div></div>
+    <div class="step"><div class="n">3</div><div><b>Label</b><span>An analyst reviews the most unusual alerts and labels them. Here the analyst is simulated with the true labels.</span></div></div>
+    <div class="step"><div class="n">4</div><div><b>Learn</b><span>The model retrains with those few labels and now knows the scam by name.</span></div></div>
+  </div>
+
+  <div class="row">
+    <label for="k">Alerts the analyst labels:</label>
+    <input type="number" id="k" value="30" min="5" max="200">
+    <button class="btn" id="run">Run adaptation</button>
+    <button class="btn ghost" id="reset">Reset to old model</button>
+    <a href="/pay.html">Try it on the pay screen</a>
+  </div>
+
+  <div id="err" class="err" hidden></div>
+  <div id="out"><div class="panel empty">Press "Run adaptation" to see the before and after.</div></div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const pct = v => (v * 100).toFixed(1) + "%";
+
+function render(r) {
+  const rows = [
+    ["1. Before: old model", r.before],
+    ["2. Novelty alert only", r.novelty_alert],
+    ["4. After retraining", r.after],
+  ];
+  const tr = ([n, m]) => `<tr><td>${n}</td><td class="v">${pct(m.recall)}</td><td class="v">${pct(m.precision)}</td><td class="v">${pct(m.false_positive_rate)}</td></tr>`;
+  const bars = [["Before", r.before.recall, "var(--high)"], ["Novelty alert", r.novelty_alert.recall, "var(--med)"], ["After retraining", r.after.recall, "var(--low)"]]
+    .map(([n, v, c]) => `<div><div class="l"><span>${n}</span><b>${pct(v)}</b></div><div class="bar"><i style="width:${Math.round(v * 100)}%;background:${c}"></i></div></div>`).join("");
+  $("#out").innerHTML = `
+   <div class="panel"><h2>How many fake-investment scams do we catch?</h2>
+     <div class="bars">${bars}</div>
+     <p class="cap">Held-out test: ${r.test_size} new transactions, ${r.test_fraud} are fraud. The analyst labelled ${r.labels_used} alerts (${r.labelled_fraud} fraud, ${r.labelled_legit} legitimate).</p></div>
+   <div class="panel"><h2>Details on the new scam</h2>
+     <table><tr><th>Stage</th><th>Recall</th><th>Precision</th><th>False-positive rate</th></tr>${rows.map(tr).join("")}</table></div>
+   <div class="panel"><h2>Did learning the new scam break the old ones?</h2>
+     <table><tr><th>Known 5 scams</th><th>Recall</th><th>Precision</th><th>False-positive rate</th></tr>
+       ${tr(["Before", r.known_scams_before])}${tr(["After", r.known_scams_after])}</table>
+     <p class="cap">No loss on old scams. The live model is now the adapted one, so the "NEW scam" payment on the pay screen is flagged by name.</p></div>`;
+}
+
+async function call(path, body) {
+  $("#err").hidden = true;
+  try {
+    const res = await fetch(path, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body || {})});
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  } catch (e) {
+    $("#err").hidden = false;
+    $("#err").textContent = "Could not reach the backend. Open this page from http://127.0.0.1:8000/adapt.html and keep uvicorn running.";
+    throw e;
+  }
+}
+$("#run").onclick = async () => {
+  const b = $("#run"); b.disabled = true; b.textContent = "Training…";
+  try { render(await call("/adapt/run", {k: +$("#k").value || 30})); } catch (e) {}
+  b.disabled = false; b.textContent = "Run adaptation";
+};
+$("#reset").onclick = async () => {
+  try { await call("/adapt/reset"); $("#out").innerHTML = '<div class="panel empty">Back to the old model. The new scam will be missed again (only a review alert).</div>'; } catch (e) {}
+};
+</script>
+</body>
+</html>

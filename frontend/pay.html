@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UPI Shield - Pay screen demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#1B2340;--muted:#5B6485;--bg:#F2F4FA;--card:#fff;--line:#D9DEEC;--brand:#3B4BDB;
+--low:#1F8A5B;--med:#B97A00;--high:#C8321F;--lowbg:#E5F5EC;--highbg:#FDE8E4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Hanken Grotesk",system-ui,sans-serif}
+h1,h2,.big{font-family:"Bricolage Grotesque","Hanken Grotesk",sans-serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+.wrap{max-width:900px;margin:0 auto;padding:24px 20px 48px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.side h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em}
+.side p{color:var(--muted);margin:6px 0 16px}
+.sc{display:grid;gap:8px}
+.sc button{text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px}
+.sc button[aria-pressed=true]{border-color:var(--brand);box-shadow:0 0 0 2px #3B4BDB33}
+.sc b{display:block}.sc span{color:var(--muted);font-size:.9rem}
+.note{margin-top:16px;font-size:.85rem;color:var(--muted)}
+.phone{position:relative;background:var(--card);border:1px solid var(--line);border-radius:28px;overflow:hidden;min-height:780px;box-shadow:0 10px 30px #1b234014}
+.appbar{padding:16px 20px;background:var(--brand);color:#fff;font-weight:600}
+.pay{padding:28px 22px;text-align:center}
+.av{width:64px;height:64px;border-radius:50%;background:#E3E7F4;margin:0 auto 10px;display:grid;place-items:center;font:800 1.5rem "Bricolage Grotesque"}
+.pn{font-weight:600;font-size:1.1rem}.upi{color:var(--muted);font-size:.9rem;word-break:break-all}
+.amt{font:800 2.6rem/1.1 "Bricolage Grotesque";margin:18px 0 4px}
+.tn{color:var(--muted);margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 22px}
+.chips i{font-style:normal;font-size:.78rem;background:#EEF0F8;border-radius:999px;padding:3px 10px;color:var(--muted)}
+.go{width:100%;border:0;border-radius:14px;background:var(--brand);color:#fff;padding:15px;font-weight:600;font-size:1.05rem}
+.go:disabled{opacity:.6}
+.done{padding:48px 24px;text-align:center}
+.done .big{color:var(--low);font-size:1.8rem}
+.sheet{position:absolute;inset:0;background:#1b2340aa;display:flex;align-items:flex-end}
+.sheet[hidden]{display:none}
+.card{background:#fff;width:100%;max-height:100%;overflow:auto;border-radius:24px 24px 0 0;animation:up .25s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.card{animation:none}}
+.hd{padding:20px 22px 16px;background:var(--highbg)}
+.hd.med{background:#FFF3D6}
+.tag{display:inline-block;font-weight:600;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;color:var(--high)}
+.hd.med .tag{color:var(--med)}
+.big.h{font-size:1.55rem;font-weight:800;line-height:1.2;margin-top:6px}
+.sub{margin-top:6px;color:var(--muted)}
+.bd{padding:16px 22px 22px}
+.bd h2{font-size:1rem;margin:0 0 8px}
+.rs{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
+.rs li{display:grid;gap:4px}
+.rs .bar{height:6px;border-radius:4px;background:#EEF0F8}
+.rs .bar i{display:block;height:100%;border-radius:4px;background:var(--high)}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;margin-bottom:14px}
+.cancel{width:100%;border:0;border-radius:14px;background:var(--high);color:#fff;padding:14px;font-weight:600;font-size:1.02rem}
+.anyway{width:100%;border:0;background:none;color:var(--muted);padding:12px;text-decoration:underline;font-size:.9rem}
+.err{background:var(--highbg);border-radius:10px;padding:10px 12px;margin:12px 22px;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="side">
+    <h1>Pay-time warning</h1>
+    <p>Pick a payment, then press Pay. UPI Shield scores it with the ML model before the money leaves.</p>
+    <div class="sc" id="sc" role="group" aria-label="Scenarios"></div>
+    <p class="note">Demo only. Synthetic data, no real payment is made. Backend must be running on this same server.</p>
+  </div>
+
+  <div class="phone" aria-live="polite">
+    <div class="appbar">Pay via UPI</div>
+    <div id="screen"></div>
+    <div class="sheet" id="sheet" hidden></div>
+  </div>
+</div>
+
+<script>
+// Each scenario = what the payment app already knows about the payment (the model's input features).
+const SCENARIOS = [
+  {key:"collect", name:"Collect-request refund", desc:"'Refund' that is really a collect request",
+   pn:"Refund Support", upi:"refund.support@ybl", tn:"Refund of order", mode:"collect",
+   txn:{amount:5000,hour:14,is_collect:1,is_new_payee:1,narration_refund:1,payee_age_days:10,user_avg_amount:600}},
+  {key:"qr", name:"QR swap at a shop", desc:"Scammer's QR pasted over the shop's QR",
+   pn:"Sharma Tea Stall", upi:"tea.stall99@okaxis", tn:"Tea and snacks", mode:"qr", shop:"Sharma Tea Stall",
+   txn:{amount:800,hour:19,qr_name_mismatch:1,is_new_payee:1,payee_age_days:20,payee_senders_24h:6,user_avg_amount:500}},
+  {key:"remote", name:"Screen-share scam", desc:"A 'support agent' on AnyDesk guides you",
+   pn:"Rohit Verma", upi:"rohit.v7788@paytm", tn:"Account verification", mode:"pay",
+   txn:{amount:45000,hour:21,screen_share:1,new_device:1,is_new_payee:1,velocity_1h:3,payee_age_days:15,payee_senders_24h:4,user_avg_amount:700}},
+  {key:"mule", name:"Mule account", desc:"Brand-new account receiving from many people",
+   pn:"Amit Traders", upi:"amit.tr2210@ybl", tn:"Advance", mode:"pay",
+   txn:{amount:22000,hour:2,is_new_payee:1,payee_age_days:5,payee_senders_24h:35,velocity_1h:2,user_avg_amount:900}},
+  {key:"kyc", name:"Fake KYC fee link", desc:"Pay Rs 10 to 'verify KYC'",
+   pn:"KYC Verify Desk", upi:"kyc.verify@okicici", tn:"KYC verification fee", mode:"pay",
+   txn:{amount:10,hour:11,from_link:1,narration_fee:1,is_new_payee:1,payee_age_days:15,payee_senders_24h:6,user_avg_amount:400}},
+  {key:"newscam", name:"NEW scam: fake investment", desc:"Never seen before. Run the adaptation page, then try again",
+   pn:"Alpha Gains Pvt", upi:"alphagains.pay@ybl", tn:"Trading deposit", mode:"pay",
+   txn:{amount:8000,hour:15,payee_txn_count:4,velocity_1h:6,payee_age_days:25,payee_senders_24h:80,user_avg_amount:2500}},
+  {key:"legit", name:"Normal payment (safe)", desc:"Regular shop you pay often",
+   pn:"Green Grocer", upi:"greengrocer@okhdfc", tn:"Vegetables", mode:"pay",
+   txn:{amount:420,hour:13,payee_txn_count:15,payee_age_days:900,payee_senders_24h:3,user_avg_amount:450}},
+  {key:"legit2", name:"Genuine collect request (safe)", desc:"A real biller asking you to pay",
+   pn:"City Gas Services", upi:"citygas@okicici", tn:"Gas bill", mode:"collect",
+   txn:{amount:1500,hour:12,is_collect:1,is_new_payee:1,payee_age_days:800,payee_senders_24h:12,user_avg_amount:800}},
+];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const rs = n => "₹" + Number(n).toLocaleString("en-IN");
+let cur = SCENARIOS[0];
+
+// Plain-language headline, chosen from what the model says this payment is.
+function headline(sc, r) {
+  const a = rs(sc.txn.amount);
+  const by = {
+    "Collect Request Trap": sc.txn.is_collect
+      ? [`You are about to PAY, not receive, ${a}`, "Approving a collect request sends money out. Receiving money never needs your UPI PIN."]
+      : [`This looks like a fake refund. You are about to PAY ${a}`, "Refunds are credited to you. You never have to pay or enter a PIN to receive one."],
+    "QR Swap": [`This QR may not belong to ${esc(sc.shop || "the shop")}`, "The receiver name on the QR does not match the shop. Scammers paste their own QR over real ones."],
+    "Remote Access Scam": [`A screen-sharing app is active while you pay ${a}`, "Real banks never ask you to install AnyDesk or TeamViewer. Someone may be watching your screen."],
+    "Mule Account Chain": [`This receiver is a brand-new account collecting from many people`, "Fraud money is often moved through fresh accounts like this one."],
+    "Unusual pattern (possible new scam)": [`This payment looks very unusual. Please double-check ${a}`, "We have not seen this exact scam before, but the pattern is unlike normal payments. Verify the receiver before paying."],
+    "Fake Investment Scam": [`Likely fake investment: you are about to pay ${a}`, "Repeated deposits to a new account that many other people are also paying. Real investments do not work like this."],
+    "Fake KYC / Fee Link": [`No bank charges a fee to verify KYC`, "This payment came from a link asking for a small fee. It is a common trap."],
+  };
+  return by[r.scam_type] || [`High risk payment of ${a}`, "Several signals look unusual for this payment."];
+}
+
+function renderList() {
+  $("#sc").innerHTML = SCENARIOS.map(s =>
+    `<button data-k="${s.key}" aria-pressed="${s.key === cur.key}"><b>${esc(s.name)}</b><span>${esc(s.desc)}</span></button>`).join("");
+}
+$("#sc").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  cur = SCENARIOS.find(s => s.key === b.dataset.k);
+  $("#sheet").hidden = true; renderList(); renderPay();
+};
+
+function renderPay() {
+  const t = cur.txn;
+  const chips = [t.is_collect ? "Collect request" : cur.mode === "qr" ? "Scanned QR" : "Send money",
+                 t.is_new_payee ? "New payee" : "Known payee"];
+  $("#screen").innerHTML = `
+    <div class="pay">
+      <div class="av">${esc(cur.pn[0])}</div>
+      <div class="pn">${esc(cur.pn)}</div>
+      <div class="upi">${esc(cur.upi)}</div>
+      <div class="amt">${rs(t.amount)}</div>
+      <div class="tn">${esc(cur.tn)}</div>
+      <div class="chips">${chips.map(c => `<i>${c}</i>`).join("")}</div>
+      <button class="go" id="go">Pay ${rs(t.amount)}</button>
+    </div>`;
+  $("#go").onclick = checkAndPay;
+}
+
+async function checkAndPay() {
+  const btn = $("#go"); btn.disabled = true; btn.textContent = "Checking for fraud…";
+  const asked = cur;
+  let r;
+  try {
+    const res = await fetch("/score-txn", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(cur.txn)});
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    r = await res.json();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "Pay " + rs(cur.txn.amount);
+    $("#screen").insertAdjacentHTML("afterbegin", `<div class="err">Could not reach the fraud checker. Is the backend running and did you open this page from http://127.0.0.1:8000/pay.html ?</div>`);
+    return;
+  }
+  if (asked !== cur) return;   // user switched scenario while we were waiting
+  if (!r.flagged) return success(r);
+  warn(r);
+}
+
+function warn(r) {
+  const [h, sub] = headline(cur, r);
+  const lv = r.level === "High" ? "" : "med";
+  const maxI = Math.max(0.01, ...r.reasons.map(x => x.impact));
+  const items = r.reasons.map(x => `<li><span>${esc(x.text)}</span>
+      <div class="bar" aria-hidden="true"><i style="width:${x.impact === 0 ? 100 : Math.max(8, Math.round(x.impact / maxI * 100))}%"></i></div></li>`).join("");
+  $("#sheet").hidden = false;
+  $("#sheet").innerHTML = `
+   <div class="card" role="alertdialog" aria-modal="true" aria-labelledby="wh">
+     <div class="hd ${lv}">
+       <span class="tag">${esc(r.level)} risk &middot; ${esc(r.scam_type)}</span>
+       <div class="big h" id="wh">${h}</div>
+       <div class="sub">${esc(sub)}</div>
+     </div>
+     <div class="bd">
+       <div class="meta"><span>Fraud probability ${Math.round(r.fraud_probability * 100)}%</span>
+         <span>${r.looks_unusual ? "Unusual for normal behaviour" : "Matches a known pattern"}</span></div>
+       <h2>Why we are warning you</h2>
+       <ul class="rs">${items}</ul>
+       <button class="cancel" id="cancel">Cancel payment</button>
+       <button class="anyway" id="anyway">I understand the risk, pay anyway</button>
+     </div>
+   </div>`;
+  $("#cancel").focus();
+  $("#cancel").onclick = () => { $("#sheet").hidden = true; renderPay(); };
+  $("#anyway").onclick = () => { $("#sheet").hidden = true; success(r, true); };
+}
+
+function success(r, risky) {
+  $("#screen").innerHTML = `<div class="done"><div class="big" style="${risky ? "color:var(--high)" : ""}">${risky ? "Paid despite warning" : "Payment OK"}</div>
+    <p>${risky ? "Demo only: in a real app this is where the money would leave. Note this is logged for the analyst." : `Fraud probability ${Math.round(r.fraud_probability * 100)}%. No warning needed.`}</p>
+    <button class="go" id="again" style="max-width:220px">Try another</button></div>`;
+  $("#again").onclick = renderPay;
+}
+
+renderList(); renderPay();
+</script>
+</body>
+</html>

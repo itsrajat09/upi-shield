@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UPI Shield - Analyst dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F2F4FA;--surface:#fcfcfb;--ink:#1B2340;--ink2:#52514e;--muted:#6b7090;--line:#D9DEEC;--grid:#E6E9F3;--brand:#3B4BDB;
+  --c1:#2a78d6;--c2:#eb6834;--c3:#1baf7a;--c4:#eda100;--c5:#e87ba4;--c6:#008300;--c7:#6250d6;--cx:#8a8f9f;
+  --seq-dark:#256abf;--seq-light:#9ec5f4;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme:dark;
+    --bg:#121211;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#9a998f;--line:#33332f;--grid:#2a2a27;--brand:#8c97ff;
+    --c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#008300;--c7:#9085e9;--cx:#7b7f8c;
+    --seq-dark:#3987e5;--seq-light:#184f95;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121211;--surface:#1a1a19;--ink:#f0efec;--ink2:#c3c2b7;--muted:#9a998f;--line:#33332f;--grid:#2a2a27;--brand:#8c97ff;
+  --c1:#3987e5;--c2:#d95926;--c3:#199e70;--c4:#c98500;--c5:#d55181;--c6:#008300;--c7:#9085e9;--cx:#7b7f8c;
+  --seq-dark:#3987e5;--seq-light:#184f95;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Hanken Grotesk",system-ui,sans-serif}
+h1,h2,.kpi b{font-family:"Bricolage Grotesque","Hanken Grotesk",sans-serif;margin:0}
+button,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+main{max-width:1120px;margin:0 auto;padding:24px 20px 56px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:18px}
+h1{font-size:1.9rem;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:2px 0 0}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:0;border-radius:10px;padding:9px 16px;font-weight:600;background:var(--brand);color:#fff}
+:root[data-theme="dark"] .btn,:root:where(:not([data-theme="light"])) .btn{color:#10122b}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.6;cursor:wait}
+.live{display:flex;gap:6px;align-items:center;color:var(--ink2);font-size:.9rem}
+a{color:var(--brand)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 16px}
+.kpi b{display:block;font-size:1.6rem;font-weight:800;line-height:1.15}
+.kpi span{color:var(--muted);font-size:.85rem}
+.grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;margin-bottom:16px}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-width:0}
+h2{font-size:1.05rem;font-weight:600;margin-bottom:2px}
+.cap{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 8px;font-size:.82rem;color:var(--ink2)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart{position:relative}
+svg{display:block;width:100%;height:auto}
+svg text{fill:var(--muted);font:11px "Hanken Grotesk",sans-serif}
+.tip{position:absolute;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:.82rem;box-shadow:0 6px 18px #0002;opacity:0;transition:opacity .1s;z-index:3;min-width:170px}
+.tip.on{opacity:1}
+.tip b{display:block;margin-bottom:4px}
+.tip div{display:flex;justify-content:space-between;gap:14px}
+.tip i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.hb{display:grid;gap:9px}
+.hb .r{display:grid;grid-template-columns:minmax(120px,38%) 1fr 34px;gap:10px;align-items:center;font-size:.88rem}
+.hb .r span.n{color:var(--ink2)}
+.hb .track{height:12px;background:var(--grid);border-radius:6px;overflow:hidden;display:flex;gap:2px}
+.hb .track i{display:block;height:100%}
+.hb .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.hb.rec .r{grid-template-columns:minmax(120px,20%) 1fr 235px}
+.hb.rec .v{text-align:left;font-weight:500;color:var(--ink2);font-size:.82rem}
+details.t{margin-top:8px;font-size:.85rem}
+details.t summary{cursor:pointer;color:var(--ink2)}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:.8rem}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+select{padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px}
+.alert{cursor:pointer}
+.alert:hover td{background:var(--grid)}
+.why td{background:var(--bg);padding:10px 14px}
+.why ul{margin:0;padding-left:18px;color:var(--ink2)}
+.meter{display:inline-block;width:54px;height:6px;border-radius:3px;background:var(--grid);vertical-align:middle;margin-left:6px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--ink2)}
+.act{display:flex;gap:6px;flex-wrap:wrap}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:3px 9px;font-size:.8rem}
+.chip{display:inline-block;border-radius:999px;padding:1px 9px;font-size:.78rem;font-weight:600;border:1px solid var(--line);color:var(--ink2)}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+.err{background:#FDE8E4;color:#7a1d10;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Analyst dashboard</h1>
+      <p class="sub">Flagged transactions, fraud categories and trends. Synthetic data only.</p>
+    </div>
+    <div class="bar">
+      <button class="btn" id="seed">Load demo data</button>
+      <button class="btn ghost" id="rescore">Re-score with current model</button>
+      <label class="live"><input type="checkbox" id="live"> Live refresh</label>
+      <a href="/adapt.html">Adaptation</a> <a href="/pay.html">Pay screen</a>
+    </div>
+  </header>
+
+  <div id="err" class="err" hidden></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Flagged transactions per day</h2>
+      <p class="cap">Last 14 days, by fraud category. Hover a day for the numbers.</p>
+      <div class="legend" id="legend"></div>
+      <div class="chart" id="trend"></div>
+      <details class="t"><summary>Show data table</summary><div id="trendTable"></div></details>
+    </section>
+    <section class="panel">
+      <h2>Fraud categories</h2>
+      <p class="cap">Flagged transactions in total.</p>
+      <div class="hb" id="cats"></div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-bottom:16px">
+    <h2>How many scams of each type do we catch?</h2>
+    <p class="cap">Measured on the labelled history. <span style="color:var(--seq-dark)">&#9632;</span> caught and named &nbsp; <span style="color:var(--seq-light)">&#9632;</span> caught as "unusual", needs an analyst. Run the adaptation page, then re-score, and the new scam turns from review-only into named.</p>
+    <div class="hb rec" id="rec"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Flagged transactions</h2>
+    <p class="cap">Click a row to see why it was flagged. Your verdicts are saved.</p>
+    <div class="filters">
+      <select id="fcat" aria-label="Filter by category"></select>
+      <select id="fst" aria-label="Filter by status">
+        <option value="">All statuses</option><option value="open">Open</option>
+        <option value="confirmed">Confirmed fraud</option><option value="false_alarm">False alarm</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto"><table id="alerts"></table></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => Number(n).toLocaleString("en-IN");
+const pct = v => (v * 100).toFixed(1) + "%";
+// fixed colour per category (colour follows the entity, never its rank)
+const CATS = [
+  ["Collect Request Trap", "Collect request", "--c1"], ["QR Swap", "QR swap", "--c2"],
+  ["Remote Access Scam", "Remote access", "--c3"], ["Mule Account Chain", "Mule account", "--c4"],
+  ["Fake KYC / Fee Link", "Fake KYC", "--c5"], ["Fake Investment Scam", "Fake investment", "--c6"],
+  ["Unusual pattern (possible new scam)", "Unusual (new?)", "--c7"],
+];
+const catColor = n => `var(${(CATS.find(c => c[0] === n) || [0, 0, "--cx"])[2]})`;
+const catShort = n => (CATS.find(c => c[0] === n) || [0, n])[1];
+const TYPES = [["collect_refund","Collect request"],["qr_swap","QR swap"],["remote_access","Remote access"],
+  ["mule_chain","Mule account"],["fake_kyc","Fake KYC"],["fake_investment","Fake investment (new)"]];
+let S = null, timer = null;
+
+async function api(path, body) {
+  try {
+    const r = await fetch(path, body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    $("#err").hidden = true;
+    return await r.json();
+  } catch (e) {
+    $("#err").hidden = false;
+    $("#err").textContent = "Could not reach the backend. Open this page from http://127.0.0.1:8000/dashboard.html and keep uvicorn running.";
+    throw e;
+  }
+}
+
+function kpis(s) {
+  const lab = s.labelled ? `on ${fmt(s.labelled)} labelled transactions` : "load demo data first";
+  const items = [
+    [fmt(s.total), "Transactions scored"],
+    [fmt(s.flagged), s.total ? `Flagged (${pct(s.flagged / s.total)})` : "Flagged"],
+    ["₹" + fmt(s.amount_at_risk), "Amount at risk"],
+    [s.labelled ? pct(s.precision) : "-", "Precision, " + lab],
+    [s.labelled ? pct(s.recall) : "-", "Recall"],
+    [s.labelled ? pct(s.false_positive_rate) : "-", "False-positive rate"],
+  ];
+  $("#kpis").innerHTML = items.map(([v, k]) => `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join("");
+}
+
+function niceMax(m) { for (const s of [4, 8, 12, 20, 40, 60, 100, 200, 400]) if (m <= s) return s; return Math.ceil(m / 100) * 100; }
+
+function trend(s) {
+  const days = s.by_day, W = 760, H = 270, L = 34, R = 8, T = 10, B = 26;
+  const tot = d => Object.values(d.counts).reduce((a, b) => a + b, 0);
+  const mx = niceMax(Math.max(1, ...days.map(tot)));
+  const pw = W - L - R, ph = H - T - B, bw = pw / days.length, barW = Math.min(34, bw * .62);
+  const y = v => T + ph - v / mx * ph;
+  let g = "";
+  for (let i = 0; i <= 4; i++) {
+    const v = mx / 4 * i;
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  const order = CATS.map(c => c[0]).concat(Object.keys(s.by_category).filter(k => !CATS.find(c => c[0] === k)));
+  let bars = "", hits = "";
+  days.forEach((d, i) => {
+    const x = L + bw * i + (bw - barW) / 2; let acc = 0;
+    order.forEach(cn => {
+      const n = d.counts[cn] || 0; if (!n) return;
+      const y1 = y(acc + n), h = y(acc) - y1; acc += n;
+      bars += `<rect x="${x}" y="${y1}" width="${barW}" height="${Math.max(1, h)}" rx="3" fill="${catColor(cn)}" stroke="var(--surface)" stroke-width="2"/>`;
+    });
+    const dt = new Date(d.day + "T00:00:00Z");
+    if (i % 2 === (days.length - 1) % 2) bars += `<text x="${x + barW / 2}" y="${H - 8}" text-anchor="middle">${dt.getUTCDate()} ${dt.toLocaleString("en", {month:"short", timeZone:"UTC"})}</text>`;
+    hits += `<rect data-i="${i}" x="${L + bw * i}" y="${T}" width="${bw}" height="${ph}" fill="transparent"/>`;
+  });
+  $("#trend").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Flagged transactions per day by category">${g}${bars}${hits}</svg><div class="tip" id="tip"></div>`;
+  const tip = $("#tip"), box = $("#trend");
+  box.querySelectorAll("rect[data-i]").forEach(r => {
+    r.onmousemove = e => {
+      const d = days[+r.dataset.i], b = box.getBoundingClientRect();
+      const rows = order.filter(c => d.counts[c]).map(c => `<div><span><i style="background:${catColor(c)}"></i>${esc(catShort(c))}</span><b style="display:inline;margin:0">${d.counts[c]}</b></div>`).join("") || "<div>No flagged transactions</div>";
+      tip.innerHTML = `<b>${new Date(d.day + "T00:00:00Z").toLocaleDateString("en-GB", {day:"numeric", month:"short", timeZone:"UTC"})} &middot; ${tot(d)} flagged</b>${rows}`;
+      tip.style.left = Math.min(b.width - 190, Math.max(0, e.clientX - b.left + 12)) + "px";
+      tip.style.top = Math.max(0, e.clientY - b.top - 20) + "px"; tip.classList.add("on");
+    };
+    r.onmouseleave = () => tip.classList.remove("on");
+  });
+  const present = order.filter(c => days.some(d => d.counts[c]));
+  $("#legend").innerHTML = present.map(c => `<span><i style="background:${catColor(c)}"></i>${esc(catShort(c))}</span>`).join("");
+  $("#trendTable").innerHTML = `<table><tr><th>Day</th>${present.map(c => `<th class="num">${esc(catShort(c))}</th>`).join("")}<th class="num">Total</th></tr>` +
+    days.map(d => `<tr><td>${d.day}</td>${present.map(c => `<td class="num">${d.counts[c] || 0}</td>`).join("")}<td class="num">${tot(d)}</td></tr>`).join("") + "</table>";
+}
+
+function cats(s) {
+  const e = Object.entries(s.by_category).sort((a, b) => b[1] - a[1]);
+  if (!e.length) { $("#cats").innerHTML = '<div class="empty">Nothing flagged yet.</div>'; return; }
+  const mx = e[0][1];
+  $("#cats").innerHTML = e.map(([n, v]) => `<div class="r"><span class="n">${esc(n)}</span><div class="track"><i style="width:${v / mx * 100}%;background:${catColor(n)}"></i></div><span class="v">${v}</span></div>`).join("");
+}
+
+function recall(s) {
+  const rows = TYPES.filter(([k]) => s.recall_by_type[k]).map(([k, n]) => {
+    const t = s.recall_by_type[k], named = t.named / t.total * 100, rev = (t.caught - t.named) / t.total * 100;
+    return `<div class="r"><span class="n">${n}</span><div class="track" title="${t.caught} of ${t.total} caught"><i style="width:${named}%;background:var(--seq-dark)"></i><i style="width:${rev}%;background:var(--seq-light)"></i></div><span class="v">${pct(t.recall)} (${t.named} named, ${t.caught - t.named} review)</span></div>`;
+  });
+  $("#rec").innerHTML = rows.join("") || '<div class="empty">Load demo data to measure this.</div>';
+}
+
+async function loadAlerts() {
+  const q = new URLSearchParams({limit: 60, category: $("#fcat").value, status: $("#fst").value});
+  const a = await api("/dash/alerts?" + q);
+  if (!a.length) { $("#alerts").innerHTML = '<tr><td class="empty">No flagged transactions match.</td></tr>'; return; }
+  const when = t => new Date(t * 1000).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"});
+  $("#alerts").innerHTML = `<tr><th>Time</th><th>Category</th><th>Risk</th><th class="num">Amount</th><th>Top reason</th><th>Verdict</th></tr>` +
+    a.map(r => `<tr class="alert" data-id="${r.id}" tabindex="0" aria-expanded="false">
+      <td>${when(r.ts)}</td>
+      <td><span class="sw" style="background:${catColor(r.category)}"></span>${esc(catShort(r.category))}</td>
+      <td>${esc(r.level)} ${Math.round(r.prob * 100)}%<span class="meter" aria-hidden="true"><i style="width:${Math.round(r.prob * 100)}%"></i></span></td>
+      <td class="num">₹${fmt(Math.round(r.amount))}</td>
+      <td>${esc(r.reasons[0] || "")}</td>
+      <td><div class="act">${r.status === "open" ? `<button class="mini" data-s="confirmed">Confirm fraud</button><button class="mini" data-s="false_alarm">False alarm</button>`
+         : `<span class="chip">${r.status === "confirmed" ? "Confirmed fraud" : "False alarm"}</span><button class="mini" data-s="open">Undo</button>`}</div></td></tr>
+      <tr class="why" hidden><td colspan="6"><b>Why it was flagged</b><ul>${r.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></td></tr>`).join("");
+}
+$("#alerts").onclick = async e => {
+  const btn = e.target.closest("button[data-s]"), row = e.target.closest("tr.alert");
+  if (btn && row) { await api("/dash/alerts/" + row.dataset.id, {status: btn.dataset.s}); loadAlerts(); return; }
+  if (row) { const w = row.nextElementSibling; w.hidden = !w.hidden; row.setAttribute("aria-expanded", !w.hidden); }
+};
+$("#alerts").onkeydown = e => { if (e.key === "Enter" && e.target.classList.contains("alert")) e.target.click(); };
+
+function fillFilters() {
+  $("#fcat").innerHTML = '<option value="">All categories</option>' + CATS.map(c => `<option>${esc(c[0])}</option>`).join("");
+  $("#fcat").onchange = $("#fst").onchange = loadAlerts;
+}
+
+async function load() {
+  S = await api("/dash/summary");
+  kpis(S); trend(S); cats(S); recall(S);
+  await loadAlerts();
+}
+async function busy(btn, label, fn) {
+  btn.disabled = true; const old = btn.textContent; btn.textContent = label;
+  try { await fn(); await load(); } catch (e) {}
+  btn.disabled = false; btn.textContent = old;
+}
+$("#seed").onclick = () => busy($("#seed"), "Loading…", () => api("/dash/seed", {}));
+$("#rescore").onclick = () => busy($("#rescore"), "Re-scoring…", () => api("/dash/rescore", {}));
+$("#live").onchange = e => { clearInterval(timer); if (e.target.checked) timer = setInterval(() => load().catch(() => {}), 4000); };
+fillFilters(); load().catch(() => {});
+</script>
+</body>
+</html>

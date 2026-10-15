@@ -68,6 +68,22 @@ code{background:#EEF0F8;padding:1px 6px;border-radius:5px;word-break:break-all}
 .toast.on{opacity:1}
 [hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.phone{max-width:380px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:28px;padding:22px;box-shadow:0 8px 30px #1b234018}
+.phone .to{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.avatar{width:44px;height:44px;border-radius:50%;background:#EEF0FF;color:var(--brand);display:grid;place-items:center;font-weight:800}
+.amt{display:flex;align-items:baseline;justify-content:center;gap:4px;font-family:"Bricolage Grotesque",sans-serif;font-size:2.6rem;font-weight:800;margin:10px 0}
+.amt input{width:7ch;border:0;border-bottom:2px solid var(--line);font:inherit;text-align:center;background:none}
+.tag{display:inline-block;background:#EEF0FF;border-radius:6px;padding:2px 8px;font-size:.82rem;font-weight:600;margin:0 6px 6px 0}
+.scen{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.overlay{position:fixed;inset:0;background:#1b2340cc;display:grid;place-items:center;padding:16px;z-index:10}
+.overlay[hidden]{display:none}
+.warn{background:#fff;border-radius:22px;max-width:400px;width:100%;overflow:hidden}
+.warn .hd{padding:20px;background:var(--highbg);color:var(--high)}
+.warn.safe .hd{background:var(--lowbg);color:var(--low)}
+.warn .hd h2{font-size:1.45rem;line-height:1.2}
+.warn .bd{padding:18px 20px;display:grid;gap:14px}
+.btn.danger{background:var(--high)}
 </style>
 </head>
 <body>
@@ -78,6 +94,7 @@ code{background:#EEF0F8;padding:1px 6px;border-radius:5px;word-break:break-all}
   </div>
   <nav role="tablist" aria-label="Sections">
     <button role="tab" aria-selected="true" data-view="check">Check</button>
+    <button role="tab" aria-selected="false" data-view="pay">Pay</button>
     <button role="tab" aria-selected="false" data-view="dash">Dashboard</button>
   </nav>
 </header>
@@ -109,6 +126,21 @@ code{background:#EEF0F8;padding:1px 6px;border-radius:5px;word-break:break-all}
       <div class="panel empty">Your result will appear here, with the reasons behind it.</div>
     </div>
   </section>
+
+
+  <section id="pay" hidden>
+    <div class="phone">
+      <h2 style="margin-bottom:4px">Pay (demo)</h2>
+      <p class="hint" style="margin:0 0 12px">Pick a situation, then tap Pay. Synthetic data only, no real payment happens.</p>
+      <div class="scen" id="scen"></div>
+      <div class="to"><div class="avatar" id="pav">?</div><div><b id="pname"></b><div class="hint" id="pupi" style="margin:0"></div></div></div>
+      <div id="ptags"></div>
+      <div class="amt">&#8377;<input id="pamt" type="number" min="1" aria-label="Amount in rupees"></div>
+      <div class="hint" id="pnote" style="text-align:center;margin:0 0 16px"></div>
+      <button class="btn" id="payBtn" style="width:100%">Pay</button>
+    </div>
+  </section>
+  <div class="overlay" id="ov" hidden role="dialog" aria-modal="true" aria-live="assertive"></div>
 
   <section id="dash" class="dash" hidden>
     <div class="stats" id="stats"></div>
@@ -149,10 +181,10 @@ async function api(path, body) {
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); setTimeout(()=>t.classList.remove("on"),2200); }
 
 // ---- navigation
+const VIEWS = ["check", "pay", "dash"];
 document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
-  $("#check").hidden = b.dataset.view !== "check";
-  $("#dash").hidden = b.dataset.view !== "dash";
+  VIEWS.forEach(v => $("#" + v).hidden = b.dataset.view !== v);
   if (b.dataset.view === "dash") loadDash();
 });
 document.querySelectorAll(".modes button").forEach(b => b.onclick = () => {
@@ -269,6 +301,66 @@ $("#seed").onclick = async () => {
     await api("/report", {text:"Aapka reward expire ho raha hai, turant http://paytm-reward-claim.xyz/now par OTP share karo. Pay to reward.help@ybl"});
     toast("2 sample reports added."); loadDash();
   } catch (e) {}
+};
+
+// ---- pay screen: real-time warning before the payment goes out (uses /score-txn)
+const BASE = {amount_ratio:1, hour:15, is_new_payee:0, payee_txn_count:12, payee_age_days:900, payee_senders_24h:2,
+  velocity_1h:0, new_device:0, screen_share:0, from_link:0, is_collect:0, qr_name_mismatch:0, narration_refund:0, narration_fee:0};
+const SCEN = [
+  {k:"Normal payment", name:"Ramesh Kirana Store", upi:"ramesh.kirana@oksbi", amount:420, note:"Groceries", tags:["Known receiver"], f:{amount_ratio:.9}},
+  {k:"Refund collect trap", name:"Refund Support", upi:"refund.support@ybl", amount:5000, note:"Refund of Rs 5000", tags:["Collect request","New receiver"],
+    f:{is_collect:1, narration_refund:1, is_new_payee:1, payee_txn_count:0, payee_age_days:20, payee_senders_24h:3, amount_ratio:6}},
+  {k:"QR swap", name:"Sharma Sweets", upi:"sharma.sw1@paytm", amount:450, note:"Scanned QR at shop (QR says: Rahul K)", tags:["QR name mismatch","New receiver"],
+    f:{qr_name_mismatch:1, is_new_payee:1, payee_txn_count:0, payee_age_days:15, payee_senders_24h:6}},
+  {k:"Screen-share scam", name:"Customer Care", upi:"care.helpdesk@ybl", amount:45000, note:"Guided by caller on AnyDesk", tags:["Screen sharing active","New device"],
+    f:{screen_share:1, new_device:1, is_new_payee:1, payee_txn_count:0, payee_age_days:30, velocity_1h:3, hour:21, amount_ratio:20}},
+  {k:"Mule account", name:"Ankit Traders", upi:"ankit.t@okaxis", amount:25000, note:"Urgent transfer", tags:["New receiver"],
+    f:{is_new_payee:1, payee_txn_count:0, payee_age_days:5, payee_senders_24h:35, velocity_1h:2, hour:2, amount_ratio:8}},
+  {k:"Fake KYC fee", name:"KYC Update Desk", upi:"kyc.update@ybl", amount:10, note:"Pay Rs 10 to verify KYC (from SMS link)", tags:["Opened from link","Fee demanded"],
+    f:{from_link:1, narration_fee:1, is_new_payee:1, payee_txn_count:0, payee_age_days:10, payee_senders_24h:4}},
+];
+let cur = null;
+function pick(i) {
+  cur = SCEN[i];
+  $("#pname").textContent = cur.name; $("#pupi").textContent = cur.upi; $("#pav").textContent = cur.name[0];
+  $("#pamt").value = cur.amount; $("#pnote").textContent = cur.note;
+  $("#ptags").innerHTML = cur.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("");
+  document.querySelectorAll("#scen .chip").forEach((c, j) => c.style.borderColor = j === i ? "var(--brand)" : "");
+}
+$("#scen").innerHTML = SCEN.map((x, i) => `<button class="chip" data-i="${i}">${esc(x.k)}</button>`).join("");
+$("#scen").onclick = e => { if (e.target.dataset.i !== undefined) pick(+e.target.dataset.i); };
+pick(0);
+
+const inr = n => "\u20B9" + Number(n).toLocaleString("en-IN");
+function headline(r, t) {
+  if (t.is_collect) return `You are about to PAY, not receive, ${inr(t.amount)}`;
+  if (t.screen_share) return "A screen-sharing app is active. Stop and hang up the call";
+  if (t.qr_name_mismatch) return "The QR name does not match this shop";
+  return `This ${inr(t.amount)} payment looks risky`;
+}
+$("#payBtn").onclick = async () => {
+  const amount = Math.max(1, +$("#pamt").value || 1), btn = $("#payBtn");
+  const t = {...BASE, ...cur.f, amount};
+  if (!cur.f.amount_ratio) t.amount_ratio = 1;
+  btn.disabled = true; btn.textContent = "Checking…";
+  try {
+    const r = await api("/score-txn", t), ov = $("#ov");
+    const safe = !r.flagged;
+    const why = (r.reasons || []).map(x => `<li><span class="w pos">${Math.round((x.impact||0)*100) ? "+" + Math.round(x.impact*100) : "!"}</span><span>${esc(x.text)}</span></li>`).join("");
+    ov.innerHTML = `<div class="warn ${safe ? "safe" : ""}">
+      <div class="hd"><div class="hint" style="color:inherit;margin:0 0 4px">${safe ? "UPI Shield check" : "UPI Shield warning · " + esc(r.scam_type)}</div>
+        <h2>${safe ? "Looks normal. You can pay " + inr(amount) + " to " + esc(cur.name) : esc(headline(r, t))}</h2></div>
+      <div class="bd">
+        ${safe ? "" : `<div><h2>Why we stopped you</h2><ul class="ev">${why}</ul></div>
+        <div class="score">Fraud probability ${(r.fraud_probability*100).toFixed(0)}% · risk ${esc(r.level)}</div>`}
+        <div class="row" style="margin:0"><button class="btn ${safe ? "" : "danger"}" id="ovMain">${safe ? "Confirm payment" : "Cancel payment"}</button>
+        <button class="btn ghost" id="ovAlt">${safe ? "Back" : "Pay anyway"}</button></div>
+      </div></div>`;
+    ov.hidden = false; $("#ovMain").focus();
+    $("#ovMain").onclick = () => { ov.hidden = true; toast(safe ? "Demo: payment sent." : "Payment cancelled. Stay safe."); };
+    $("#ovAlt").onclick = () => { ov.hidden = true; if (!safe) toast("Demo: you ignored the warning."); };
+  } catch (e) { toast("Could not reach the backend."); }
+  btn.disabled = false; btn.textContent = "Pay";
 };
 </script>
 </body>
