@@ -29,6 +29,8 @@ TYPE_LABEL = {
     "remote_access": "Remote Access Scam", "mule_chain": "Mule Account Chain", "fake_kyc": "Fake KYC / Fee Link",
 }
 
+SIGNATURE = ["is_collect", "screen_share", "qr_name_mismatch", "narration_refund", "narration_fee", "from_link"]
+
 # Human-readable reason for each feature, shown when that feature pushed the score up.
 REASONS = {
     "is_collect": lambda t: f"This is a collect request: you would PAY Rs {t['amount']:,.0f}, not receive it",
@@ -117,19 +119,25 @@ def score_transaction(txn, bundle=None):
     x = np.array([[float(t.get(k, 0)) for k in FEATURES]])
     rf, iso = m["rf"], m["iso"]
 
-    prob = float(fraud_prob(rf, x)[0])
-    probs = dict(zip(rf.classes_, rf.predict_proba(x)[0]))
+    # one batch: row 0 = the payment itself, rows 1.. = the payment with ONE feature reset to its normal value
+    # (the drop in fraud probability tells us how much that feature pushed the score up)
+    batch = np.repeat(x, len(FEATURES) + 1, axis=0)
+    for i in range(len(FEATURES)):
+        batch[i + 1, i] = m["baseline"][i]
+    P = rf.predict_proba(batch)
+    legit_col = list(rf.classes_).index("legit")
+    p_fraud = 1 - P[:, legit_col]
+    prob = float(p_fraud[0])
+    probs = dict(zip(rf.classes_, P[0]))
     scam = max((c for c in probs if c != "legit"), key=probs.get)
-
-    # explanation: reset one feature at a time to the normal value and see how much the score drops
-    drops = []
-    for i, name in enumerate(FEATURES):
-        x2 = x.copy(); x2[0, i] = m["baseline"][i]
-        d = prob - float(fraud_prob(rf, x2)[0])
-        if d > 0.02:
-            drops.append((d, name))
-    drops.sort(reverse=True)
+    drops = sorted(((prob - float(p_fraud[i + 1]), name) for i, name in enumerate(FEATURES)
+                    if prob - float(p_fraud[i + 1]) > 0.02), reverse=True)
     reasons = [{"feature": n, "impact": round(d, 3), "text": REASONS[n](t)} for d, n in drops[:4]]
+    # scam "signature" flags are always shown when set, even if other features also explain the score
+    shown = {r["feature"] for r in reasons}
+    for n in SIGNATURE:
+        if t.get(n) and n not in shown and prob >= THRESHOLD:
+            reasons.insert(0, {"feature": n, "impact": 0.0, "text": REASONS[n](t)})
 
     anomaly = float(-iso.decision_function(x)[0])
     return {"fraud_probability": round(prob, 3), "flagged": prob >= THRESHOLD,

@@ -1,0 +1,83 @@
+{
+  "train_size": 2250,
+  "test_size": 750,
+  "threshold": 0.5,
+  "test_fraud_rate": 0.12,
+  "tp": 84,
+  "fp": 1,
+  "tn": 659,
+  "fn": 6,
+  "precision": 0.988,
+  "recall": 0.933,
+  "f1": 0.96,
+  "false_positive_rate": 0.002,
+  "per_type_recall": {
+    "collect_refund": 0.917,
+    "fake_kyc": 0.909,
+    "mule_chain": 1.0,
+    "qr_swap": 0.812,
+    "remote_access": 1.0
+  },
+  "feature_importance": [
+    {
+      "feature": "amount",
+      "importance": 0.199
+    },
+    {
+      "feature": "amount_ratio",
+      "importance": 0.122
+    },
+    {
+      "feature": "payee_age_days",
+      "importance": 0.111
+    },
+    {
+      "feature": "payee_senders_24h",
+      "importance": 0.093
+    },
+    {
+      "feature": "narration_refund",
+      "importance": 0.084
+    },
+    {
+      "feature": "payee_txn_count",
+      "importance": 0.083
+    },
+    {
+      "feature": "qr_name_mismatch",
+      "importance": 0.065
+    },
+    {
+      "feature": "screen_share",
+      "importance": 0.055
+    },
+    {
+      "feature": "is_collect",
+      "importance": 0.051
+    },
+    {
+      "feature": "narration_fee",
+      "importance": 0.043
+    },
+    {
+      "feature": "velocity_1h",
+      "importance": 0.03
+    },
+    {
+      "feature": "hour",
+      "importance": 0.023
+    },
+    {
+      "feature": "from_link",
+      "importance": 0.021
+    },
+    {
+      "feature": "is_new_payee",
+      "importance": 0.014
+    },
+    {
+      "feature": "new_device",
+      "importance": 0.007
+    }
+  ]
+}

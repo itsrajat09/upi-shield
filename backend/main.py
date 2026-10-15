@@ -11,6 +11,8 @@ from pydantic import BaseModel
 
 from detector import analyze, extract_upi_ids, extract_urls, host_of, parse_upi_qr
 from tinyfish_intel import enabled as tinyfish_enabled, enrich
+from adapt import router as adapt_router
+from dashboard import router as dash_router, scored_and_logged
 
 DB = os.path.join(os.path.dirname(__file__), "upishield.db")
 CASES_CSV = os.path.join(os.path.dirname(__file__), "..", "data", "demo_cases.csv")
@@ -142,6 +144,14 @@ def metrics():
             "precision": round(prec, 3), "recall": round(rec, 3), "f1": round(f1, 3),
             "false_positive_rate": round(fpr, 3), "errors": errors}
 
+@app.post("/score-txn")
+def score_txn(txn: dict):
+    """Score one transaction. Body = dict of features."""
+    return scored_and_logged(txn)
+
+
+app.include_router(adapt_router)
+app.include_router(dash_router)
 
 # Serve the web app from the same server (keep this at the very end so API routes win)
 FRONTEND = os.path.join(os.path.dirname(__file__), "..", "frontend")
