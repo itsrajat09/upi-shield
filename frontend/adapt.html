@@ -40,9 +40,19 @@ td.v{font-variant-numeric:tabular-nums}
 .bars div.l{display:flex;justify-content:space-between;font-size:.9rem}
 .bar{height:12px;background:#EEF0F8;border-radius:6px;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:6px}
+
+.shieldnav{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:#1B2340;padding:8px 16px;font:600 14px/1.2 "Hanken Grotesk",system-ui,sans-serif}
+.shieldnav b{color:#fff;margin-right:12px;font-weight:800}
+.shieldnav a{color:#C9D0EE;text-decoration:none;padding:7px 12px;border-radius:8px}
+.shieldnav a:hover{background:#ffffff1f;color:#fff}
+.shieldnav a[aria-current=page]{background:#fff;color:#1B2340}
 </style>
 </head>
 <body>
+<nav class="shieldnav" aria-label="UPI Shield pages"><b>UPI Shield</b>
+  <a href="/index.html">Check message / QR</a><a href="/pay.html">Pay screen</a><a href="/dashboard.html">Analyst dashboard</a><a href="/adapt.html">Adaptation</a></nav>
+<script>document.querySelectorAll(".shieldnav a").forEach(a=>{const p=location.pathname==="/"?"/index.html":location.pathname;if(a.getAttribute("href")===p)a.setAttribute("aria-current","page")})</script>
+
 <main>
   <h1>Adapting to a new scam</h1>
   <p class="lead">The model was trained on 5 known scam types. A new one appears: <b>fake investment</b>. Here is what happens before and after the system adapts.</p>
