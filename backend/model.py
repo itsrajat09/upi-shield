@@ -45,7 +45,7 @@ REASONS = {
     "velocity_1h": lambda t: f"{t['velocity_1h']:.0f} payments from you in the last hour (unusually fast)",
     "new_device": lambda t: "This payment is from a new or unrecognised device",
     "from_link": lambda t: "This payment was started from a link you received",
-    "amount": lambda t: f"Rs {t['amount']:,.0f} is a large amount for this kind of payment",
+    "amount": lambda t: f"Rs {t['amount']:,.0f} is an unusual amount for this kind of payment",
     "amount_ratio": lambda t: f"The amount is {t['amount_ratio']:.1f}x your usual payment",
     "hour": lambda t: f"Unusual time of day ({int(t['hour']):02d}:00)",
 }
