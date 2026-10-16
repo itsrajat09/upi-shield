@@ -6,14 +6,22 @@ SHORTENERS = {"bit.ly", "tinyurl.com", "t.co", "cutt.ly", "rb.gy", "is.gd", "sho
 BAD_TLDS = {"xyz", "top", "click", "icu", "site", "online", "buzz", "live", "shop", "vip", "link", "work", "cfd"}
 BRANDS = ["sbi", "hdfc", "icici", "axis", "paytm", "phonepe", "gpay", "googlepay", "npci", "kotak", "pnb", "bhim"]
 OFFICIAL = ("sbi.co.in", "onlinesbi.sbi", "sbi.bank.in", "hdfcbank.com", "icicibank.com", "axisbank.com",
-            "paytm.com", "phonepe.com", "npci.org.in", "pay.google.com", "kotak.com", "pnbindia.in", "bhimupi.org.in")
+            "paytm.com", "phonepe.com", "npci.org.in", "pay.google.com", "kotak.com", "pnbindia.in", "bhimupi.org.in",
+            # well-known non-bank brands that legitimately send offers / receipts
+            "amazon.in", "amazon.com", "flipkart.com", "swiggy.com", "zomato.com", "myntra.com", "jio.com",
+            "airtel.in", "licindia.in", "bescom.in")
+
+
+def is_official(host):
+    """True only for the exact domain or a real subdomain (so 'fakepaytm.com' is NOT official)."""
+    return any(host == d or host.endswith("." + d) for d in OFFICIAL)
 
 # (id, weight, category, reason, regex)
 RULES = [
     ("credential", 40, "Credential Theft",
      "UPI PIN / OTP / CVV / password maanga ja raha hai (asli bank kabhi nahi maangta)",
-     r"((share|send|bhej\w*|bata\w*|batao|enter|dal\w*|daal\w*|confirm|verify)\W+(?:\w+\W+){0,3}(upi\s*pin|pin|otp|cvv|password)|(upi\s*pin|pin|otp|cvv|password)\W+(?:\w+\W+){0,3}(share|send|bhej\w*|bata\w*|batao|enter|dal\w*|daal\w*|confirm))"),
-    ("collect", 40, "Collect Request Trap",
+     r"((shar(?:e|ing|ed)|send\w*|bhej\w*|bata\w*|batao|enter|dal\w*|daal\w*|confirm|verify)\W+(?:\w+\W+){0,3}(upi\s*pin|pin|otp|cvv|password)|(upi\s*pin|pin|otp|cvv|password)\W+(?:\w+\W+){0,3}(shar(?:e|ing|ed)|send\w*|bhej\w*|bata\w*|batao|enter|dal\w*|daal\w*|confirm))"),
+    ("collect", 45, "Collect Request Trap",
      "Collect request / approve karne ko bola ja raha hai - isse paisa aata nahi, katata hai",
      r"(collect\s*request|request\s*(approve|accept)|approve\s*kar|accept\s*kar|refund.{0,40}(pin|approve|accept)|paise\s*(lene|receive).{0,30}pin)"),
     ("cashback", 25, "Fake Cashback / Reward",
@@ -28,10 +36,19 @@ RULES = [
     ("remote", 35, "Remote Access Scam",
      "Screen-share / remote access app install karne ko bola ja raha hai",
      r"(anydesk|teamviewer|quicksupport|rustdesk|screen\s*shar\w*)"),
+    ("care", 35, "Fake Customer Care",
+     "Mobile number par call karne ko bola ja raha hai - asli bank/app ki helpline mobile number nahi hoti",
+     r"(?s)(?=.*\b(helpline|customer\s*care|support|care\s*number|unblock|inactive|blocked|stuck|fail\w*)\b)(?=.*\b(call|phone|dial|contact)\b)(?=.*(?<!\d)[6-9]\d{9}(?!\d))"),
+    ("invest", 35, "Fake Investment / Job Offer",
+     "Guaranteed returns / roz kamai / registration fee jaisa lalach - investment aur job scam ka pattern",
+     r"(guarantee\w*\s*(returns?|profits?|\d+\s*%)|\d{2,}\s*%\s*returns?|double\s*your\s*money|earn\s*(rs\.?\s*)?\d[\d,]*\s*(per|a|/)?\s*(day|daily)|earn\w*.{0,30}from\s*home|part\s*time\s*job|task\s*job|registration\s*fee|ipo\s*allot\w*\s*guarantee\w*|crypto\s*trading|stock\s*tips)"),
     ("apk", 30, "Malware Link", "APK file install karne ko bola ja raha hai", r"\.apk\b"),
     ("safe_ctx", -25, "Safe",
      "'Kisi ke saath share na karein' jaisi asli bank warning mili",
      r"(do\s*not\s*share|never\s*share|don'?t\s*share|share\s*na\s*kar\w*|share\s*mat)"),
+    ("cond_ctx", -25, "Safe",
+     "'Sirf tab approve karo jab aapne khud kiya ho' jaisi savdhani - asli service ka tareeka",
+     r"(only\s*if\s*you|if\s*you\s*(initiated|recogni[sz]e|did\s*not|didn'?t)|no\s*action\s*(is\s*)?(needed|required)|koi\s*action\s*zaroori\s*nahi)"),
     ("txn_alert", -10, "Safe",
      "Normal transaction alert jaisa format", r"(debited|credited|a/c\s*(no|x+)|ref\s*no|txn\s*id)"),
 ]
@@ -48,6 +65,8 @@ NEXT_STEPS = {
     "Bank Impersonation": "Link ignore karo. Bank app ya branch se KYC status check karo.",
     "Remote Access Scam": "App install mat karo. Agar kiya hai to turant uninstall karke bank ko call karo.",
     "Malware Link": "APK install mat karo. Sirf Play Store se app lo.",
+    "Fake Customer Care": "Is number par call mat karo. Bank ka official number card ke peeche ya official app/website par milta hai.",
+    "Fake Investment / Job Offer": "Paise mat bhejo. Guaranteed returns ya ghar baithe kamai ka wada hamesha scam hota hai.",
     "Pressure Tactic": "Ruko aur soch lo. Scammer jaldi ka pressure banate hain.",
     "Suspicious Link": "Link mat kholo. Official website khud type karke jao.",
     "Suspicious UPI ID": "Is UPI ID par payment mat bhejo jab tak receiver verify na ho.",
@@ -77,7 +96,7 @@ def check_url(url):
     out, host = [], host_of(url)
     if not host:
         return out
-    official = host.endswith(OFFICIAL)
+    official = is_official(host)
     if host in SHORTENERS:
         out.append((20, f"Shortened link ({host}) - asli destination chhupi hai"))
     if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", host):
@@ -132,7 +151,8 @@ def analyze(text, extra_upi_ids=None):
             best["Suspicious UPI ID"] = max(best.get("Suspicious UPI ID", 0), w)
 
     # Combo bonus: link + credential/reward together is the classic scam shape
-    if urls and any(e["type"] in ("credential", "cashback", "kyc") for e in evidence):
+    risky_urls = [u for u in urls if not is_official(host_of(u))]
+    if risky_urls and any(e["type"] in ("credential", "cashback", "kyc") for e in evidence):
         evidence.append({"type": "combo", "weight": 10, "reason": "Link ke saath PIN/reward/KYC ki baat - classic scam combination"})
         score += 10
 

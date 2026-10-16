@@ -1,0 +1,227 @@
+{
+  "A_standard": {
+    "test_size": 750,
+    "precision": 0.988,
+    "recall": 0.933,
+    "f1": 0.96,
+    "false_positive_rate": 0.002,
+    "tp": 84,
+    "fp": 1,
+    "tn": 659,
+    "fn": 6,
+    "per_type_recall": {
+      "collect_refund": 0.917,
+      "fake_kyc": 0.909,
+      "mule_chain": 1.0,
+      "qr_swap": 0.812,
+      "remote_access": 1.0
+    }
+  },
+  "B_cv": {
+    "precision": [
+      0.958,
+      0.019
+    ],
+    "recall": [
+      0.925,
+      0.042
+    ],
+    "f1": [
+      0.94,
+      0.019
+    ],
+    "false_positive_rate": [
+      0.006,
+      0.003
+    ]
+  },
+  "C_stress": {
+    "tp": 291,
+    "fp": 105,
+    "tn": 2535,
+    "fn": 69,
+    "precision": 0.735,
+    "recall": 0.808,
+    "f1": 0.77,
+    "false_positive_rate": 0.04,
+    "roc_auc": 0.972,
+    "pr_auc": 0.877,
+    "test_size": 3000,
+    "fraud_rate": 0.12,
+    "per_type_recall": {
+      "collect_refund": 0.774,
+      "qr_swap": 0.64,
+      "remote_access": 0.988,
+      "mule_chain": 0.926,
+      "fake_kyc": 0.721
+    }
+  },
+  "D_threshold": [
+    {
+      "threshold": 0.2,
+      "tp": 341,
+      "fp": 415,
+      "tn": 2225,
+      "fn": 19,
+      "precision": 0.451,
+      "recall": 0.947,
+      "f1": 0.611,
+      "false_positive_rate": 0.157
+    },
+    {
+      "threshold": 0.3,
+      "tp": 326,
+      "fp": 284,
+      "tn": 2356,
+      "fn": 34,
+      "precision": 0.534,
+      "recall": 0.906,
+      "f1": 0.672,
+      "false_positive_rate": 0.108
+    },
+    {
+      "threshold": 0.4,
+      "tp": 308,
+      "fp": 191,
+      "tn": 2449,
+      "fn": 52,
+      "precision": 0.617,
+      "recall": 0.856,
+      "f1": 0.717,
+      "false_positive_rate": 0.072
+    },
+    {
+      "threshold": 0.5,
+      "tp": 291,
+      "fp": 105,
+      "tn": 2535,
+      "fn": 69,
+      "precision": 0.735,
+      "recall": 0.808,
+      "f1": 0.77,
+      "false_positive_rate": 0.04
+    },
+    {
+      "threshold": 0.6,
+      "tp": 273,
+      "fp": 53,
+      "tn": 2587,
+      "fn": 87,
+      "precision": 0.837,
+      "recall": 0.758,
+      "f1": 0.796,
+      "false_positive_rate": 0.02
+    },
+    {
+      "threshold": 0.7,
+      "tp": 251,
+      "fp": 27,
+      "tn": 2613,
+      "fn": 109,
+      "precision": 0.903,
+      "recall": 0.697,
+      "f1": 0.787,
+      "false_positive_rate": 0.01
+    },
+    {
+      "threshold": 0.8,
+      "tp": 222,
+      "fp": 14,
+      "tn": 2626,
+      "fn": 138,
+      "precision": 0.941,
+      "recall": 0.617,
+      "f1": 0.745,
+      "false_positive_rate": 0.005
+    }
+  ],
+  "E_text_dev": {
+    "tp": 63,
+    "fp": 0,
+    "tn": 62,
+    "fn": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "false_positive_rate": 0.0,
+    "total": 125,
+    "missed": [],
+    "false_alarms": []
+  },
+  "E_text_holdout": {
+    "tp": 20,
+    "fp": 0,
+    "tn": 25,
+    "fn": 5,
+    "precision": 1.0,
+    "recall": 0.8,
+    "f1": 0.889,
+    "false_positive_rate": 0.0,
+    "total": 50,
+    "missed": [
+      "Your electricity will be disconnected tonight 9:30 PM as previous month bill was not updated. Call 9650123478 immediately",
+      "Your parcel is held at Delhi airport, customs duty Rs 1,250 pending. Pay at bit.ly/parcel-duty-pay today",
+      "Earn money by liking videos. Daily income Rs 2,000 guaranteed. Message on Telegram @quickincome",
+      "Dear user, Rs 25,000 loan approved instantly without documents. Pay processing fee Rs 999 to loan.fast@okaxis",
+      "Congrats, you won Rs 50 lakh KBC lottery! To claim, send Rs 5,000 processing fee and your UPI PIN for verification"
+    ],
+    "false_alarms": []
+  },
+  "F_adapt": {
+    "labels_used": 30,
+    "labelled_fraud": 28,
+    "labelled_legit": 2,
+    "test_size": 300,
+    "test_fraud": 100,
+    "before": {
+      "tp": 0,
+      "fp": 3,
+      "tn": 197,
+      "fn": 100,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "false_positive_rate": 0.015
+    },
+    "novelty_alert": {
+      "tp": 89,
+      "fp": 6,
+      "tn": 194,
+      "fn": 11,
+      "precision": 0.937,
+      "recall": 0.89,
+      "f1": 0.913,
+      "false_positive_rate": 0.03
+    },
+    "after": {
+      "tp": 77,
+      "fp": 3,
+      "tn": 197,
+      "fn": 23,
+      "precision": 0.963,
+      "recall": 0.77,
+      "f1": 0.856,
+      "false_positive_rate": 0.015
+    },
+    "known_scams_before": {
+      "tp": 84,
+      "fp": 1,
+      "tn": 659,
+      "fn": 6,
+      "precision": 0.988,
+      "recall": 0.933,
+      "f1": 0.96,
+      "false_positive_rate": 0.002
+    },
+    "known_scams_after": {
+      "tp": 85,
+      "fp": 1,
+      "tn": 659,
+      "fn": 5,
+      "precision": 0.988,
+      "recall": 0.944,
+      "f1": 0.966,
+      "false_positive_rate": 0.002
+    }
+  }
+}

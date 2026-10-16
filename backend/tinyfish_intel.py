@@ -11,7 +11,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from detector import BRANDS, OFFICIAL, SHORTENERS, host_of
+from detector import BRANDS, SHORTENERS, host_of, is_official
 
 FETCH_URL = "https://api.fetch.tinyfish.ai"
 SEARCH_URL = "https://api.search.tinyfish.ai"
@@ -65,7 +65,7 @@ def page_check(url):
     ev = [(w, f"TinyFish page check: the page {reason}") for w, reason, rx in PAGE_RULES if re.search(rx, text)]
     host = host_of(url)
     brand = next((b for b in BRANDS if re.search(rf"\b{b}\b", text)), None)
-    if brand and not host.endswith(OFFICIAL):
+    if brand and not is_official(host):
         ev.append((25, f"TinyFish page check: the page uses the '{brand}' brand but '{host}' is not an official domain"))
     return {"url": url, "title": page.get("title", ""), "evidence": ev}
 
@@ -93,7 +93,7 @@ def enrich(res):
         return res
 
     urls = res["urls"][:2]
-    hosts = [h for h in dict.fromkeys(host_of(u) for u in urls) if h and h not in SHORTENERS and not h.endswith(OFFICIAL)]
+    hosts = [h for h in dict.fromkeys(host_of(u) for u in urls) if h and h not in SHORTENERS and not is_official(h)]
     indicators = hosts[:2] + res["upi_ids"][:2]
     with ThreadPoolExecutor(4) as ex:
         pf = [ex.submit(page_check, u) for u in urls]
