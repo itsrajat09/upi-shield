@@ -149,7 +149,14 @@ def score_txn(txn: dict):
     """Score one transaction. Body = dict of features."""
     return scored_and_logged(txn)
 
-
+@app.get("/evaluation")
+def evaluation():
+    """Numbers written by `python evaluate.py` (evaluation_report.json)."""
+    path = os.path.join(os.path.dirname(__file__), "evaluation_report.json")
+    if not os.path.exists(path):
+        return {"error": "Run python evaluate.py first"}
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 app.include_router(adapt_router)
 app.include_router(dash_router)
 
